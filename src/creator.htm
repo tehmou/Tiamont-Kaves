@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
+<html>
+<head>
+	<meta name="viewport" content="width=device-width"/>
+	<meta id="touch-event-mode" content="native"/>
+	<title>Tiamont Kaves</title>
+    <style type="text/css">
+
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: "Helvetica Neue", "Helvetica", "Arial", sans;
+            background: #777;
+        }
+
+        h1 {
+            margin: 10px 10px 20px 15px;
+        }
+
+        #screen-container {
+            position: absolute;
+        }
+
+        #debug-div {
+            display: block;
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            text-align: right;
+            font-size: 10pt;
+        }
+
+        #debug-div>div {
+            display: inline-block;
+            vertical-align: top;
+            margin-left: 20px;
+        }
+
+        textarea {
+            font-family: "Courier New", "Courier";
+            font-size: 20px;
+            white-space: pre;
+        }
+
+        .error {
+            padding: 5px 14px;
+            font-size: 13pt;
+            font-weight: bold;
+            color: #d00;
+            background: white;
+            border: 2px solid #900;
+            border-radius: 8px;
+            -moz-border-radius: 8px;
+        }
+
+        .box {
+            padding: 5px;
+            border: 1px solid white;
+            background: #aaa;
+        }
+
+        .hbox>div {
+            display: inline-block;
+            vertical-align: bottom;
+        }
+
+    </style>
+    <script src="js/lib/jquery-1.5.min.js" type="text/javascript"></script>
+    <script src="json/levels.js" type="text/javascript"></script>
+    <script src="js/view/pngSprites.js" type="text/javascript"></script>
+    <script src="js/model/levelCell.js" type="text/javascript"></script>
+    <script src="js/model/levelDataContainer.js" type="text/javascript"></script>
+    <script src="js/view/levelHtmlRenderer.js" type="text/javascript"></script>
+    <script src="js/logic/defaultLevelInteractionRules.js" type="text/javascript"></script>
+    <script src="js/model/level.js" type="text/javascript"></script>
+    <script src="js/logic/levelController.js" type="text/javascript"></script>
+    <script src="js/logic/tiamontKavesEngine.js" type="text/javascript"></script>
+    <script src="js/util/tiamontLevelCodec.js" type="text/javascript"></script>
+    <script type="text/javascript">
+
+
+        var tiamontKaves, level, plainUrl;
+
+        function init() {
+            var url = window.location.href;
+            if(url.indexOf("?") != -1) {
+                level = tiamontLevelCodec.decodeLevel(url.substr(url.indexOf("?") + 1));
+            } else {
+                level = LEVELS[0];
+            }
+            plainUrl = url.substr(0, url.indexOf("?"));
+
+            tiamontKaves = createTiamontKavesEngine({
+                width: 800, height: 400,
+                /*levelCompletedCallback: function() { alert('Level completed!'); },*/
+                newLevelCallback: function(levelName) { $("#title").text(levelName); refreshLiveView(); },
+                playerMoveCallback: refreshLiveView,
+                initializedCallback: function () {
+                    tiamontKaves.loadLevelFromData(level);
+                    tiamontKaves.startLevel();
+                }
+            });
+        }
+
+        $(function () {
+            $("#pullbutton").click(function () {
+                pullLevel();
+            });
+            $("#pushbutton").click(function () {
+                pushLevel();
+            });
+            $("#updatesizebutton").click(function() {
+                var sizeString = $("#levelsize").val();
+                var sizes = sizeString.split(",");
+                if(sizes.length != 2) {
+                    errd("Sizes must be like w,h");
+                    return;
+                }
+                $("#leveltextarea")
+                        .attr("rows", sizes[1])
+                        .attr("cols", sizes[0]);
+            });
+            $("#encodebutton").click(function () {
+                var code = tiamontLevelCodec.encodeLevel({
+                    name: $("#levelname").val(),
+                    stringData: $("#leveltextarea").val()
+                });
+                $("#levelLink")
+                        .text("Link to level " + $("#levelname").val())
+                        .attr("href", plainUrl + code);
+            });
+        });
+
+        var debugLevel;
+        function refreshLiveView() {
+            debugLevel = tiamontKaves._debugGetLevelString();
+            $("#liveleveltextarea")
+                    .attr("rows", debugLevel.height)
+                    .attr("cols", debugLevel.width)
+                    .text(debugLevel.data);
+            if($("#leveltextarea").val() === "") {
+                pullLevel();
+            }
+        }
+
+        function pullLevel() {
+            var livearea = $("#liveleveltextarea");
+            $("#leveltextarea")
+                    .attr("rows", livearea.attr("rows"))
+                    .attr("cols", livearea.attr("cols"))
+                    .val(livearea.val());
+
+            $("#levelsize").val(livearea.attr("cols") + "," + livearea.attr("rows"));
+            $("#levelname").val(debugLevel.name);
+        }
+
+        function pushLevel() {
+            $("#errorconsole").children().remove();
+            tiamontKaves._debugLoadLevelFromString({
+                name: $("#levelname").val(),
+                stringData: $("#leveltextarea").val()
+            }, errd);
+            refreshLiveView();
+        }
+
+        function errd(msg) {
+            $("#errorconsole").append($("<span class=\"error\">" + msg + "</span>"));
+        }
+
+        function keydown (event) {
+            if(event.keyCode === 37) {
+                tiamontKaves.moveLeft();
+            } else if(event.keyCode === 38) {
+                tiamontKaves.moveUp();
+            } else if(event.keyCode === 39) {
+                tiamontKaves.moveRight();
+            } else if(event.keyCode === 40) {
+                tiamontKaves.moveDown();
+            } else if(event.keyCode === 81) {
+                tiamontKaves.loadNextLevel();
+            }
+        }
+
+    </script>
+</head>
+<body onload="init()"
+      onkeydown="if(document.activeElement.id !== 'leveltextarea') { keydown(event); }">
+    <div id="screen-container">
+        <h1 id="title">Loading Tiamont Kaves...</h1>
+        <div id="container" style="position: absolute; display: block; left: 20px; top: 60px;"></div>
+    </div>
+    <div id="debug-div">
+        <div id="errorconsole"></div>
+        <div>
+            <div class="box">
+                <label for="levelname">name</label>
+                <input type="text" id="levelname" />
+            </div>
+            <div class="box">
+                <label for="levelsize">width,height</label>
+                <input type="text" id="levelsize" />
+                <input type="button" value="update size" id="updatesizebutton" />
+            </div>
+            <div class="hbox box">
+                <textarea id="liveleveltextarea" rows="10" cols="10"></textarea>
+                <div class="vbox"><input type="button" value="pull >" id="pullbutton" /><br /><input type="button" value="< push" id="pushbutton" /></div>
+                <textarea id="leveltextarea" rows="10" cols="10"></textarea>
+            </div>
+            <div class="box">
+                <a href="#" id="levelLink"></a>
+                <input type="button" id="encodebutton" value="Create link to this level" />
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

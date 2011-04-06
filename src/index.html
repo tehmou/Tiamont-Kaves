@@ -1,0 +1,360 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
+<html>
+<head>
+	<meta name="viewport" content="width=device-width"/>
+	<meta id="touch-event-mode" content="native"/>
+	<title>Tiamont Kaves</title>
+    <style type="text/css">
+
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: "Helvetica Neue", "Helvetica", "Arial", sans;
+            background: #888;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            padding: 0;
+        }
+
+        #title {
+            margin-right: 15px;
+        }
+
+        #menu-bg {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+        }
+
+        #veil {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            background: #000;
+            opacity: 0.80;
+        }
+
+        #help-box {
+            position: absolute;
+            left: 270px;
+            top: 50px;
+            bottom: 50px;
+            width: 350px;
+            color: #ddd;
+            font-size: 12px;
+        }
+
+        #help-box .header-text {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        #help-box .intro-text {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        #help-box>div {
+            margin-bottom: 30px;
+        }
+
+        #help-box img {
+            float: left;
+            margin: 2px 8px 4px 4px;
+            padding: 3px;
+            border: 1px solid #555;
+        }
+
+        #screen-container {
+            position: absolute;
+            overflow: hidden;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+        }
+
+        #container {
+            position: absolute;
+        }
+
+        #left-navi {
+            display: block;
+            position: fixed;
+            left: -240px;
+            top: 0;
+            bottom: 0;
+            width: 200px;
+            padding: 15px 15px;
+            color: #eee;
+            background: #333;
+            border-right: 2px solid #000;
+        }
+
+        .logo {
+            display: block;
+            vertical-align: bottom;
+            height: 140px;
+            text-align: center;
+            background: url("icon_86x86.png") no-repeat center center;
+        }
+
+        #menu-button, #hide-menu-button {
+            position: absolute;
+            text-align: center;
+            white-space: nowrap;
+            width: 150px;
+            right: 10px;
+            bottom: 10px;
+            font-size: 20px;
+        }
+
+        #menu-button span, #hide-menu-button span {
+            display: block;
+            padding: 6px 3px;
+            font-weight: bold;
+        }
+
+        #level-list>div, .button {
+            display: block;
+            padding: 3px 6px;
+            margin: 7px;
+            background: #292929;
+            border: 2px solid #666;
+            border-radius: 5px;
+            color: #eee;
+            cursor: default;
+        }
+
+        #level-list>div.selected span {
+            display: list-item;
+        }
+
+        #level-list>div.disabled {
+            color: #444;
+            border-color: #000;
+        }
+
+        #level-list>div.disabled:hover {
+            color: #444;
+            border-color: #000;
+        }
+
+        #level-list>div:hover, .button:hover {
+            color: #fff;
+            background: #000;
+            border-color: #aaa;
+        }
+        
+        #controls {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            bottom: 2px;
+            text-align: right;
+        }
+
+        #arrows {
+            position: absolute;
+            right: 0;
+            width: 160px;
+            height: 160px;
+            background: url("images/controls-01.png") no-repeat center center;
+        }
+
+
+        #restart {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 4px 12px 5px 10px;
+            margin: 14px 20px;
+            cursor: default;
+            text-align: center;
+            font-size: 20px;
+        }
+
+    </style>
+    <script src="js/lib/custom/ThreeCanvas.js" type="text/javascript"></script>
+    <script src="js/lib/custom/ThreeExtras.js" type="text/javascript"></script>
+    <script src="js/lib/Three.js" type="text/javascript"></script>
+    <script src="js/lib/jquery-1.5.min.js" type="text/javascript"></script>
+
+    <script src="js/3d/RequestAnimationFrame.js" type="text/javascript"></script>
+    <script src="js/3d/Stats.js" type="text/javascript"></script>
+
+    <script src="3d/diamond.js" type="text/javascript"></script>
+    <script src="3d/cube.js" type="text/javascript"></script>
+
+    <script src="json/levels.js" type="text/javascript"></script>
+
+    <script src="js/model/levelCell.js" type="text/javascript"></script>
+    <script src="js/model/levelDataContainer.js" type="text/javascript"></script>
+    <script src="js/model/level.js" type="text/javascript"></script>
+
+    <script src="js/view/pngSprites.js" type="text/javascript"></script>
+    <script src="js/view/level3DRenderer.js" type="text/javascript"></script>
+
+    <script src="js/logic/defaultLevelInteractionRules.js" type="text/javascript"></script>
+    <script src="js/logic/levelController.js" type="text/javascript"></script>
+    <script src="js/logic/tiamontKavesEngine.js" type="text/javascript"></script>
+
+    <script src="js/util/tiamontLevelCodec.js" type="text/javascript"></script>
+    <script src="js/tiamontkaves.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+
+
+        var tiamontKaves, level, plainUrl,
+            lastLevelUnlocked = localStorage["lastLevelUnlocked"] || 0,
+            levelButtons = [],
+            updateLevelButtons = function () {
+                for (var i = 0; i < levelButtons.length; i++) {
+                    levelButtons[i]
+                            .toggleClass("disabled", i > lastLevelUnlocked)
+                            .toggleClass("selected", i == tiamontKaves.getCurrentLevelIndex());
+                }
+            },
+            showMenu = function () {
+                $("#menu-bg").fadeIn(500);
+                $("#left-navi").animate({ left: 0 }, 500);
+            },
+            hideMenu = function (callback) {
+                $("#menu-bg").fadeOut(600, function () {
+                    $("#menu-bg").toggle(false);
+                    callback && callback();
+                });
+                $("#left-navi").animate({ left: -230 }, 600);
+            },
+            init = function () {
+                var url = window.location.href;
+                if(url.indexOf("?") != -1) {
+                    level = tiamontLevelCodec.decodeLevel(url.substr(url.indexOf("?") + 1));
+                }
+
+                tiamontKaves = tiamontKavesCreator({
+                    width: 800, height: 400,
+                    tooFewDiamondsCallback: function (tiamontsLeft) {
+                        if(tiamontsLeft > 1) {
+                            alert('There are still ' + tiamontsLeft + " tiamonts left! You have to collect them all.");
+                        } else {
+                            alert('There is only one tiamont left!');
+                        }
+                    },
+                    levelCompletedCallback: function () { alert('Level completed!'); },
+                    gameCompletedCallback: function () { alert('Congratulations, you have completed the game! More levels to come soon.'); },
+                    newLevelCallback: function (levelName) {
+                        $("#title").text(levelName);
+                        lastLevelUnlocked = Math.max(lastLevelUnlocked, tiamontKaves.getCurrentLevelIndex());
+                        localStorage["lastLevelUnlocked"] = lastLevelUnlocked;
+                        updateLevelButtons();
+                    },
+                    initializedCallback: function () {
+                        if (level) {
+                            tiamontKaves.loadLevelFromData(level);
+                            tiamontKaves.startLevel();
+                        } else {
+                            tiamontKaves.loadLevelByIndex(lastLevelUnlocked);
+                        }
+                    }
+                });
+
+                $("#arrows").mousedown(function (event) {
+                    var x = event.layerX, y = event.layerY,
+                        width = $("#arrows").width(), height = $("#arrows").height(),
+                        a = (y > height - x), b = (y > x);
+
+                    console.log("(" + x + ", " + y + ")");
+                    if(a && b) {
+                        tiamontKaves.moveDown();
+                    } else if(a && !b) {
+                        tiamontKaves.moveRight();
+                    } else if(!a && b) {
+                        tiamontKaves.moveLeft();
+                    } else if(!a && !b) {
+                        tiamontKaves.moveUp();
+                    }
+                });
+
+                $("#restart").click(function () {
+                    hideMenu(function () {
+                        tiamontKaves.restartLevel();
+                    });
+                });
+
+                $("#menu-button").click(showMenu);
+                $("#veil, #help-box, #hide-menu-button").click(function () { hideMenu() });
+
+                for (var i = 0; i < LEVELS.length; i++) {
+                    var levelDiv = $("<div><span>" + LEVELS[i].name + "</span></div>");
+                    levelDiv.click(function () {
+                        var levelIndex = i;
+                        return function () {
+                            if (levelIndex <= lastLevelUnlocked) {
+                                hideMenu(function () {
+                                    tiamontKaves.loadLevelByIndex(levelIndex);
+                                });
+                            }
+                        };
+                    }());
+                    levelButtons.push(levelDiv);
+                    $("#level-list").append(levelDiv);
+                }
+                updateLevelButtons();
+                //showMenu();
+            },
+
+            keydown = function (event) {
+                if(event.keyCode === 37) {
+                    tiamontKaves.moveLeft();
+                } else if(event.keyCode === 38) {
+                    tiamontKaves.moveUp();
+                } else if(event.keyCode === 39) {
+                    tiamontKaves.moveRight();
+                } else if(event.keyCode === 40) {
+                    tiamontKaves.moveDown();
+                } else if(event.keyCode === 81) {
+                    tiamontKaves.loadNextLevel();
+                }
+            };
+
+    </script>
+</head>
+<body onload="init()"
+      onkeydown="keydown(event)">
+    <div id="screen-container">
+        <div id="container"></div>
+        <div id="controls">
+            <h1 id="title">Loading Tiamont Kaves...</h1>
+            <div id="arrows">
+                <div id="touch-point"><div></div></div>
+            </div>
+        </div>
+        <div id="menu-button" class="button"><span>Menu & Help</span></div>
+        <div id="menu-bg">
+            <div id="veil"></div>
+            <div id="help-box">
+                <div><span class="intro-text">Collect all of the diamonds and make it to the exit hole. If you get stuck you can always restart the current level.</span></div>
+                <div><img src="images/sprites_all_3d_09.png" /><span class="header-text">WOODEN BOX<br /></span><span>Friendly boxes that you can push around. Push as many as you like at once&mdash;provided there is space behind, of course.</span></div>
+                <div><img src="images/sprites_all_3d_07.png" /><span class="header-text">METAL BOX<br /></span><span>Heavy, metal containers that take some effort to move. Only one can be moved at a time.</span></div>
+                <div><img src="images/sprites_all_3d_05.png" /><span class="header-text">BRICK WALL<br /></span><span>Neither you nor boxes you push can go through a wall.</span></div>
+                <div><img src="images/sprites_all_3d_17.png" /><span class="header-text">ARROW<br /></span><span>You can enter a tile with an arrow only from behind the arrow. You can leave in any direction that is not against the arrow.</span></div>
+            </div>
+            <div id="hide-menu-button" class="button"><span>Hide Menu</span></div>
+        </div>
+        <div id="left-navi">
+            <div class="logo"><span>Tiamont Kaves 2.1</span></div>
+            <div id="level-list"></div>
+            <h1 id="restart" class="button">Restart Level</h1>
+        </div>
+    </div>
+</body>
+</html>
