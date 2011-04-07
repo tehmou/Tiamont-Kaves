@@ -269,8 +269,12 @@ var levelRendererCreator = function(options) {
         animationProgress = 0,
         animationEndCallback,
         startLevelCompleteAnimation = function (callback) {
-            if (callback) { animationEndCallback = callback; }
-
+            if (callback) {
+                animationEndCallback = callback;
+            }
+            levelCompleteAnimation();
+        },
+        levelCompleteAnimation = function () {
             animationProgress += 0.05;
             if(animationProgress >= 1.0) {
                 animationEndCallback && animationEndCallback();
@@ -281,7 +285,7 @@ var levelRendererCreator = function(options) {
             playerSprite.scale.y = 1.0 - animationProgress;
             playerSprite.scale.z = 1.0 - animationProgress;
             renderer.render( scene, camera );
-            setTimeout(startLevelCompleteAnimation, 1000 / 30);
+            setTimeout(levelCompleteAnimation, 1000 / 30);
         };
 
 

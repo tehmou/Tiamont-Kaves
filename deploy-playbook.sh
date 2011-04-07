@@ -1,19 +1,10 @@
 #!/bin/bash
 
-source config.sh
+source build.sh
 
-echo "Removing old release"
-rm -rf release
-
-echo "Copying src"
-cp -r src release
-cp config-playbook.xml release/config.xml
 cd release
 
-echo "Removing redundant files"
-find . -name ".DS_Store" | xargs rm -Rf
-find . -name ".idea" | xargs rm -Rf
-find . -name ".ai" | xargs rm -Rf
+cp ../config-playbook.xml config.xml
 
 echo "Zipping"
 zip -r ${APP_NAME}.zip *
